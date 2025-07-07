@@ -1,0 +1,12 @@
+version: 2
+sources:
+  - name: dbt_mgosselin
+    database: dbt-certified-developer-path
+    schema: dbt_mgosselin
+    tables:
+      - name: customers
+        description: "customer details"
+      - name: orders
+        description: "order details"
+      - name: payments
+        description: "payment details"
