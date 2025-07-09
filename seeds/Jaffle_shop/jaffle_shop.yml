@@ -1,6 +1,6 @@
 version: 2
 sources:
-  - name: dbt_mgosselin
+  - name: raw
     database: dbt-certified-developer-path
     schema: dbt_mgosselin
     tables:
