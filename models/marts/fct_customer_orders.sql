@@ -20,21 +20,22 @@ customers as (
 , payments as (
     select
         ORDERID as order_id,
-        CREATED as created_date,
-        AMOUNT as amount
+        CREATED as payment_date,
+        AMOUNT as payment_amount,
+        STATUS as payment_status
     from {{ source('raw', 'payments') }}
 )
 
 , agg_payments as (
     select
-        order_id,
-        max(created_date) as payment_finalized_date,
-        sum(amount) / 100.0 as total_amount_paid
-    from {{ source('raw', 'payments') }}
-    where status <> 'fail'
+        payments.order_id,
+        max(payments.payment_date) as payment_finalized_date,
+        sum(payments.payment_amount) / 100.0 as total_amount_paid
+    from payments
+    where payments.payment_status <> 'fail'
     group by 1
 )
-paid_orders as (
+, paid_orders as (
     select
         orders.order_id,
         orders.customer_id,
@@ -50,7 +51,7 @@ paid_orders as (
 )
 , customer_orders as (
     select
-        customer_id,
+        customers.customer_id,
         min(order_placed_at) as first_order_date,
         max(order_placed_at) as most_recent_order_date,
         count(order_id) as number_of_orders
@@ -61,12 +62,12 @@ paid_orders as (
 
 , customer_value as (
     select 
-        p.order_id, 
+        paid_orders.order_id, 
         sum(t2.total_amount_paid) as total_value
-    from paid_orders p
-    left join paid_orders t2 on p.customer_id = t2.customer_id and p.order_id >= t2.order_id
+    from paid_orders
+    left join paid_orders t2 on paid_orders.customer_id = t2.customer_id and paid_orders.order_id >= t2.order_id
     group by 1
-    order by p.order_id
+    order by paid_orders.order_id
 )
 
 select
@@ -81,5 +82,5 @@ select
     customer_orders.first_order_date as fdos
 from paid_orders
 left join customer_orders using (customer_id)
-left outer join customer_value on customer_value.order_id = p.order_id
-order by order_id
+left outer join customer_value on customer_value.order_id = paid_orders.order_id
+order by paid_orders.order_id
